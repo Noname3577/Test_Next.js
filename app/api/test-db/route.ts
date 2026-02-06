@@ -1,39 +1,19 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { initDatabase } from '@/lib/init-db';
 
 export async function GET() {
   try {
-    // ทดสอบการเชื่อมต่อ
-    const client = await pool.connect();
+    // เริ่มต้นฐานข้อมูล (สร้างตารางและข้อมูลทดสอบ)
+    await initDatabase();
     
-    // สร้างตารางทดสอบ
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
-        email VARCHAR(100) UNIQUE NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // เพิ่มข้อมูลทดสอบ
-    await client.query(`
-      INSERT INTO users (name, email) 
-      VALUES 
-        ('สมชาย ใจดี', 'somchai@example.com'),
-        ('สมหญิง รักสนุก', 'somying@example.com'),
-        ('ประยุทธ์ มั่นคง', 'prayut@example.com')
-      ON CONFLICT (email) DO NOTHING
-    `);
-
-    // ดึงข้อมูลทั้งหมด
-    const result = await client.query('SELECT * FROM users ORDER BY id');
-    
-    client.release();
+    // ทดสอบการเชื่อมต่อและดึงข้อมูล
+    const result = await pool.query('SELECT * FROM users ORDER BY id');
 
     return NextResponse.json({
       success: true,
-      message: 'เชื่อมต่อฐานข้อมูลสำเร็จ!',
+      message: 'เชื่อมต่อฐานข้อมูลสำเร็จ! ✅',
+      database: process.env.DATABASE_URL ? 'Railway PostgreSQL' : 'Local PostgreSQL',
       data: result.rows,
       rowCount: result.rowCount
     });
@@ -41,7 +21,7 @@ export async function GET() {
     console.error('Database error:', error);
     return NextResponse.json({
       success: false,
-      message: 'เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล',
+      message: 'เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล ❌',
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }

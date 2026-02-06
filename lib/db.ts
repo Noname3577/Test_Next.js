@@ -25,4 +25,12 @@ const pool = new Pool(
       }
 );
 
+// เริ่มต้นฐานข้อมูลอัตโนมัติเมื่อ import
+if (typeof window === 'undefined') {
+  // รันเฉพาะฝั่ง server
+  import('./init-db').then(({ initDatabase }) => {
+    initDatabase().catch(console.error);
+  });
+}
+
 export default pool;
