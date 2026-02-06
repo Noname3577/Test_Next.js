@@ -10,16 +10,51 @@ interface User {
   created_at: string;
 }
 
+type SortField = 'id' | 'name' | 'email' | 'created_at';
+type SortOrder = 'asc' | 'desc';
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ name: '', email: '' });
   const [isAdding, setIsAdding] = useState(false);
+  
+  // ค้นหาและจัดเรียง
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState<SortField>('id');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    // กรองและจัดเรียงข้อมูล
+    let filtered = users.filter(user => 
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.id.toString().includes(searchTerm)
+    );
+
+    // จัดเรียง
+    filtered.sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+
+      if (sortField === 'created_at') {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      }
+
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    setFilteredUsers(filtered);
+  }, [users, searchTerm, sortField, sortOrder]);
 
   const fetchUsers = async () => {
     try {
@@ -48,9 +83,12 @@ export default function UsersPage() {
         setUsers([...users, data.data]);
         setFormData({ name: '', email: '' });
         setIsAdding(false);
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาด');
       }
     } catch (error) {
       console.error('Error adding user:', error);
+      alert('เกิดข้อผิดพลาด');
     }
   };
 
@@ -66,9 +104,12 @@ export default function UsersPage() {
         setUsers(users.map(u => u.id === id ? data.data : u));
         setEditingId(null);
         setFormData({ name: '', email: '' });
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาด');
       }
     } catch (error) {
       console.error('Error updating user:', error);
+      alert('เกิดข้อผิดพลาด');
     }
   };
 
@@ -98,6 +139,20 @@ export default function UsersPage() {
     setFormData({ name: '', email: '' });
   };
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return '↕️';
+    return sortOrder === 'asc' ? '↑' : '↓';
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -119,7 +174,31 @@ export default function UsersPage() {
           </Link>
         </div>
 
-        {/* ฟอร์มเพิ่มข้อมูล */}
+        {/* ค้นหา */}
+        <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
+          <div className="flex gap-4 items-center">
+            <div className="flex-1">
+              <label className="block text-gray-700 mb-2 font-semibold">🔍 ค้นหา:</label>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="ค้นหาด้วย ID, ชื่อ หรืออีเมล..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="mt-8 bg-gray-500 text-white px-4 py-3 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                ล้าง
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ฟอร์มเพิ่ม/แก้ไขข้อมูล */}
         <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
           {!isAdding && !editingId && (
             <button
@@ -180,27 +259,47 @@ export default function UsersPage() {
             <table className="w-full">
               <thead className="bg-blue-500 text-white">
                 <tr>
-                  <th className="px-6 py-4 text-left">ID</th>
-                  <th className="px-6 py-4 text-left">ชื่อ</th>
-                  <th className="px-6 py-4 text-left">อีเมล</th>
-                  <th className="px-6 py-4 text-left">วันที่สร้าง</th>
+                  <th 
+                    className="px-6 py-4 text-left cursor-pointer hover:bg-blue-600 transition-colors"
+                    onClick={() => handleSort('id')}
+                  >
+                    ID {getSortIcon('id')}
+                  </th>
+                  <th 
+                    className="px-6 py-4 text-left cursor-pointer hover:bg-blue-600 transition-colors"
+                    onClick={() => handleSort('name')}
+                  >
+                    ชื่อ {getSortIcon('name')}
+                  </th>
+                  <th 
+                    className="px-6 py-4 text-left cursor-pointer hover:bg-blue-600 transition-colors"
+                    onClick={() => handleSort('email')}
+                  >
+                    อีเมล {getSortIcon('email')}
+                  </th>
+                  <th 
+                    className="px-6 py-4 text-left cursor-pointer hover:bg-blue-600 transition-colors"
+                    onClick={() => handleSort('created_at')}
+                  >
+                    วันที่สร้าง {getSortIcon('created_at')}
+                  </th>
                   <th className="px-6 py-4 text-center">จัดการ</th>
                 </tr>
               </thead>
               <tbody>
-                {users.length === 0 ? (
+                {filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                      ไม่มีข้อมูล
+                      {searchTerm ? 'ไม่พบข้อมูลที่ค้นหา' : 'ไม่มีข้อมูล'}
                     </td>
                   </tr>
                 ) : (
-                  users.map((user, index) => (
+                  filteredUsers.map((user, index) => (
                     <tr 
                       key={user.id} 
                       className={`${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-blue-50 transition-colors`}
                     >
-                      <td className="px-6 py-4">{user.id}</td>
+                      <td className="px-6 py-4 font-mono text-gray-600">#{user.id}</td>
                       <td className="px-6 py-4 font-medium">{user.name}</td>
                       <td className="px-6 py-4">{user.email}</td>
                       <td className="px-6 py-4 text-gray-600">
@@ -236,8 +335,15 @@ export default function UsersPage() {
           </div>
         </div>
 
-        <div className="mt-6 bg-white p-4 rounded-lg shadow text-center text-gray-600">
-          จำนวนข้อมูลทั้งหมด: <span className="font-bold text-blue-600">{users.length}</span> รายการ
+        <div className="mt-6 bg-white p-4 rounded-lg shadow text-center">
+          <div className="flex justify-center gap-8 text-gray-600">
+            <span>
+              แสดง: <span className="font-bold text-blue-600">{filteredUsers.length}</span> รายการ
+            </span>
+            <span>
+              ทั้งหมด: <span className="font-bold text-blue-600">{users.length}</span> รายการ
+            </span>
+          </div>
         </div>
       </div>
     </div>
