@@ -4,11 +4,11 @@ import pool from '@/lib/db';
 // PUT - แก้ไขข้อมูล user
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { name, email } = await request.json();
-    const id = params.id;
+    const { id } = await params;
     
     const result = await pool.query(
       'UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING *',
@@ -34,10 +34,10 @@ export async function PUT(
 // DELETE - ลบข้อมูล user
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     
     const result = await pool.query(
       'DELETE FROM users WHERE id = $1 RETURNING *',
