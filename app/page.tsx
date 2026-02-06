@@ -54,6 +54,29 @@ export default function Home() {
             <li>✅ Real-time updates</li>
           </ul>
         </div>
+
+        <div className="mt-6 bg-yellow-50 border-2 border-yellow-300 p-4 rounded-lg">
+          <p className="text-yellow-800 text-center">
+            ⚠️ <strong>ถ้าเจอปัญหา:</strong> เปิด{' '}
+            <a 
+              href="/api/reset-db" 
+              className="underline font-semibold hover:text-yellow-900"
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirm('รีเซ็ตฐานข้อมูล? ข้อมูลเก่าจะถูกลบทั้งหมด')) {
+                  fetch('/api/reset-db', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                      alert(data.message);
+                      window.location.reload();
+                    });
+                }
+              }}
+            >
+              คลิกที่นี่เพื่อรีเซ็ตฐานข้อมูล
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
