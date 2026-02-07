@@ -8,14 +8,14 @@ export async function GET() {
     await initDatabase();
     
     // ทดสอบการเชื่อมต่อและดึงข้อมูล
-    const result = await pool.query('SELECT * FROM users ORDER BY id');
+    const [rows] = await pool.query('SELECT * FROM users ORDER BY id');
 
     return NextResponse.json({
       success: true,
       message: 'เชื่อมต่อฐานข้อมูลสำเร็จ! ✅',
-      database: process.env.DATABASE_URL ? 'Railway PostgreSQL' : 'Local PostgreSQL',
-      data: result.rows,
-      rowCount: result.rowCount
+      database: process.env.MYSQL_URL || process.env.DATABASE_URL ? 'Railway MySQL' : 'Local MySQL',
+      data: rows,
+      rowCount: Array.isArray(rows) ? rows.length : 0
     });
   } catch (error) {
     console.error('Database error:', error);

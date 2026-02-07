@@ -4,13 +4,13 @@ import pool from '@/lib/db';
 export async function POST() {
   try {
     // ลบตารางเก่า
-    await pool.query('DROP TABLE IF EXISTS users CASCADE');
+    await pool.query('DROP TABLE IF EXISTS users');
     console.log('✅ Dropped old users table');
 
     // สร้างตารางใหม่
     await pool.query(`
       CREATE TABLE users (
-        id SERIAL PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         email VARCHAR(100) UNIQUE NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -30,13 +30,13 @@ export async function POST() {
     console.log('✅ Inserted sample data');
 
     // ดึงข้อมูลทั้งหมด
-    const result = await pool.query('SELECT * FROM users ORDER BY id');
+    const [rows] = await pool.query('SELECT * FROM users ORDER BY id');
 
     return NextResponse.json({
       success: true,
       message: 'รีเซ็ตฐานข้อมูลสำเร็จ! ✅',
-      data: result.rows,
-      rowCount: result.rowCount
+      data: rows,
+      rowCount: Array.isArray(rows) ? rows.length : 0
     });
   } catch (error) {
     console.error('Reset database error:', error);

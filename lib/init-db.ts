@@ -10,16 +10,16 @@ export async function initDatabase() {
   }
 
   try {
-    console.log('🔄 Initializing database...');
+    console.log('🔄 Initializing MySQL database...');
     
-    // ลบตารางเก่าถ้ามี (เพื่อป้องกันปัญหาโครงสร้างไม่ตรง)
-    await pool.query('DROP TABLE IF EXISTS users CASCADE');
+    // ลบตารางเก่าถ้ามี
+    await pool.query('DROP TABLE IF EXISTS users');
     console.log('✅ Dropped old table if exists');
     
     // สร้างตารางใหม่
     await pool.query(`
       CREATE TABLE users (
-        id SERIAL PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         email VARCHAR(100) UNIQUE NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -39,10 +39,9 @@ export async function initDatabase() {
     console.log('✅ Sample data inserted (5 users)');
 
     isInitialized = true;
-    console.log('🎉 Database initialization complete!');
+    console.log('🎉 MySQL database initialization complete!');
   } catch (error) {
     console.error('❌ Database initialization error:', error);
     // ไม่ throw error เพื่อให้ build ผ่าน
-    // throw error;
   }
 }

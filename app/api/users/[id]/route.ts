@@ -10,19 +10,25 @@ export async function PUT(
     const { name, email } = await request.json();
     const { id } = await params;
     
-    const result = await pool.query(
-      'UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING *',
+    await pool.query(
+      'UPDATE users SET name = ?, email = ? WHERE id = ?',
       [name, email, id]
     );
     
-    if (result.rows.length === 0) {
+    // ดึงข้อมูลที่อัพเดท
+    const [rows]: any = await pool.query(
+      'SELECT * FROM users WHERE id = ?',
+      [id]
+    );
+    
+    if (!rows || rows.length === 0) {
       return NextResponse.json({
         success: false,
         error: 'User not found'
       }, { status: 404 });
     }
     
-    return NextResponse.json({ success: true, data: result.rows[0] });
+    return NextResponse.json({ success: true, data: rows[0] });
   } catch (error) {
     return NextResponse.json({
       success: false,
@@ -39,22 +45,25 @@ export async function DELETE(
   try {
     const { id } = await params;
     
-    const result = await pool.query(
-      'DELETE FROM users WHERE id = $1 RETURNING *',
+    // ดึงข้อมูลก่อนลบ
+    const [rows]: any = await pool.query(
+      'SELECT * FROM users WHERE id = ?',
       [id]
     );
     
-    if (result.rows.length === 0) {
+    if (!rows || rows.length === 0) {
       return NextResponse.json({
         success: false,
         error: 'User not found'
       }, { status: 404 });
     }
     
+    await pool.query('DELETE FROM users WHERE id = ?', [id]);
+    
     return NextResponse.json({ 
       success: true, 
       message: 'User deleted successfully',
-      data: result.rows[0]
+      data: rows[0]
     });
   } catch (error) {
     return NextResponse.json({

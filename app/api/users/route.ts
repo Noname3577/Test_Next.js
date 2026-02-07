@@ -4,11 +4,11 @@ import pool from '@/lib/db';
 // GET - ดึงข้อมูล users ทั้งหมด
 export async function GET() {
   try {
-    const result = await pool.query('SELECT * FROM users ORDER BY id');
+    const [rows] = await pool.query('SELECT * FROM users ORDER BY id');
     return NextResponse.json({ 
       success: true, 
-      data: result.rows,
-      count: result.rowCount 
+      data: rows,
+      count: Array.isArray(rows) ? rows.length : 0
     });
   } catch (error) {
     return NextResponse.json({
@@ -30,19 +30,25 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
     
-    const result = await pool.query(
-      'INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *',
+    const [result]: any = await pool.query(
+      'INSERT INTO users (name, email) VALUES (?, ?)',
       [name, email]
+    );
+    
+    // ดึงข้อมูลที่เพิ่งสร้าง
+    const [rows]: any = await pool.query(
+      'SELECT * FROM users WHERE id = ?',
+      [result.insertId]
     );
     
     return NextResponse.json({ 
       success: true, 
-      data: result.rows[0],
+      data: rows[0],
       message: 'เพิ่มข้อมูลสำเร็จ ✅'
     });
   } catch (error) {
     // เช็คว่าเป็น duplicate email error
-    if (error instanceof Error && error.message.includes('duplicate key')) {
+    if (error instanceof Error && error.message.includes('Duplicate entry')) {
       return NextResponse.json({
         success: false,
         error: 'อีเมลนี้มีในระบบแล้ว'
